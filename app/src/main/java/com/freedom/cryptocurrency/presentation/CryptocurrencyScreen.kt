@@ -1,5 +1,6 @@
 package com.freedom.cryptocurrency.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,14 +18,18 @@ import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.freedom.cryptocurrency.connection.ConnectionStateModel
+import com.freedom.cryptocurrency.connection.connectivityState
 
 @Composable
 fun CryptocurrencyScreen(
@@ -40,29 +45,44 @@ fun CryptocurrencyScreen(
 private fun Content(
     pagingItems: LazyPagingItems<CryptocurrencyListItemState>,
 ) {
-    if (pagingItems.itemCount == 0) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
+    Box(Modifier.fillMaxSize()) {
+        if (pagingItems.itemCount == 0) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            val refreshing = pagingItems.loadState.refresh == LoadState.Loading
+            val pullRefreshState = rememberPullRefreshState(
+                refreshing = refreshing,
+                onRefresh = { pagingItems.refresh() }
+            )
+
+            Box(
+                Modifier.pullRefresh(pullRefreshState)
+            ) {
+                List(pagingItems = pagingItems)
+
+                PullRefreshIndicator(
+                    refreshing,
+                    pullRefreshState,
+                    Modifier.align(Alignment.TopCenter)
+                )
+            }
         }
-    } else {
-        val refreshing = pagingItems.loadState.refresh == LoadState.Loading
-        val pullRefreshState = rememberPullRefreshState(
-            refreshing = refreshing,
-            onRefresh = { pagingItems.refresh() }
-        )
 
-        Box(
-            Modifier.pullRefresh(pullRefreshState)
-        ) {
-            List(pagingItems = pagingItems)
-
-            PullRefreshIndicator(
-                refreshing,
-                pullRefreshState,
-                Modifier.align(Alignment.TopCenter)
+        val connection by connectivityState()
+        val isConnected = connection === ConnectionStateModel.Available
+        if (!isConnected) {
+            Text(
+                text = "no internet!",
+                textAlign = TextAlign.Center,
+                modifier = Modifier.align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .background(Color.Yellow)
+                    .padding(12.dp)
             )
         }
     }
@@ -105,7 +125,7 @@ private fun CryptocurrencyItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = state.nameFa + " (${state.symbol})" ,
+            text = state.nameFa + " (${state.symbol})",
         )
 
         Text(
