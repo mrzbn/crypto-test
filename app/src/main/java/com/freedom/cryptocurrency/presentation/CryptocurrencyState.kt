@@ -1,6 +1,7 @@
 package com.freedom.cryptocurrency.presentation
 
 import com.freedom.cryptocurrency.domain.CryptocurrencyModel
+import java.text.DecimalFormat
 
 data class CryptocurrencyListItemState(
     val id: Int,
@@ -15,7 +16,7 @@ data class CryptocurrencyListItemState(
             id = id,
             nameFa = nameFa,
             symbol = symbol,
-            price = String.format("%.2s", price)
+            price = price.take(8)
         )
 
     }

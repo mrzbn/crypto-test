@@ -10,15 +10,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.Text
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 
@@ -31,6 +35,7 @@ fun CryptocurrencyScreen(
     )
 }
 
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun Content(
     pagingItems: LazyPagingItems<CryptocurrencyListItemState>,
@@ -43,19 +48,42 @@ private fun Content(
             CircularProgressIndicator()
         }
     } else {
-        LazyColumn(
-            contentPadding = PaddingValues(20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        val refreshing = pagingItems.loadState.refresh == LoadState.Loading
+        val pullRefreshState = rememberPullRefreshState(
+            refreshing = refreshing,
+            onRefresh = { pagingItems.refresh() }
+        )
+
+        Box(
+            Modifier.pullRefresh(pullRefreshState)
         ) {
-            items(
-                count = pagingItems.itemCount,
-            ) { index ->
-                val item = pagingItems[index]
-                if (item != null) {
-                    CryptocurrencyItem(
-                        state = item,
-                    )
-                }
+            List(pagingItems = pagingItems)
+
+            PullRefreshIndicator(
+                refreshing,
+                pullRefreshState,
+                Modifier.align(Alignment.TopCenter)
+            )
+        }
+    }
+}
+
+@Composable
+private fun List(
+    pagingItems: LazyPagingItems<CryptocurrencyListItemState>,
+) {
+    LazyColumn(
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        items(
+            count = pagingItems.itemCount,
+        ) { index ->
+            val item = pagingItems[index]
+            if (item != null) {
+                CryptocurrencyItem(
+                    state = item,
+                )
             }
         }
     }
@@ -77,11 +105,7 @@ private fun CryptocurrencyItem(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = state.symbol,
-        )
-
-        Text(
-            text = state.nameFa,
+            text = state.nameFa + " (${state.symbol})" ,
         )
 
         Text(
